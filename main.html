@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Test!</title>
+    <title>Weather</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="icon" href="favicon (1).ico" type="image/x-icon">
+    <script src="scripts.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -151,6 +152,20 @@
             margin-bottom: 5px;
         }
 
+
+        #warning-message {
+            margin-top: 20px;
+            padding: 10px;
+            background-image: linear-gradient(to right, red, orange);
+            color: #333;
+            border-radius: 5px;
+            display: none;
+        }
+
+        #warning-message .warning-icon {
+            margin-right: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -162,270 +177,20 @@
             <div id="weather-info"></div>
             <p class="error-message" id="error-message"></p>
             <button id="toggle-unit-btn">Switch to Fahrenheit</button>
-            <input type="checkbox" id="addToFavoritesCheckbox">
-        <label for="addToFavoritesCheckbox">Add to Favorites</label>
         </div>
         <div id="forecast"></div>
 
         <div id="history-tab">
             <h2>Search History</h2>
+            <button id="clear-history-btn">Clear History</button>
             <ul id="history-list"></ul>
-        </div>
-        <div id="favorites">
-            <h2>Favorites</h2>
-            <ul id="favorites-list"></ul>
-        </div>
+            <div id="warning-message">
+                <span class="warning-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                <span>We DO NOT use your location its just a feature that lets you see the weather of where you are!</span>
+            </div>
     </div>
-    
-
-    <script>
-        const apiKey = '6a73dd074c9b3fdf8ee3d8542f54e431';
-        let isCelsius = true; // Flag to track temperature unit
-
-        document.getElementById('search-btn').addEventListener('click', () => {
-            const city = document.getElementById('city-input').value.trim();
-            if (city) {
-                getWeather(city);
-                getForecast(city);
-            } else {
-                document.getElementById('error-message').textContent = 'Please enter a city name.';
-                document.getElementById('weather-info').innerHTML = '';
-                document.getElementById('forecast').innerHTML = '';
-            }
-        });
-
-        document.getElementById('toggle-unit-btn').addEventListener('click', () => {
-            isCelsius = !isCelsius; // Toggle temperature unit
-            const city = document.getElementById('city-input').value.trim();
-            if (city) {
-                getWeather(city);
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if ('geolocation' in navigator) {
-                navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-            } else {
-                console.error('Geolocation is not supported by your browser');
-            }
-        });
-
-        function successCallback(position) {
-            const { latitude, longitude } = position.coords;
-            getWeatherByCoordinates(latitude, longitude);
-            getForecastByCoordinates(latitude, longitude);
-        }
-
-        function errorCallback(error) {
-            console.error('Error getting geolocation:', error.message);
-        }
-
-        async function getWeatherByCoordinates(latitude, longitude) {
-            try {
-                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`);
-                if (!response.ok) {
-                    throw new Error('Unable to fetch weather data');
-                }
-                const data = await response.json();
-                displayWeather(data);
-                document.getElementById('error-message').textContent = '';
-                document.getElementById('toggle-unit-btn').classList.add('show'); // Show the switch button
-            } catch (error) {
-                console.error('Error fetching weather data:', error.message);
-                document.getElementById('weather-info').innerHTML = '';
-                document.getElementById('error-message').textContent = error.message;
-                document.getElementById('toggle-unit-btn').classList.remove('show'); // Hide the switch button on error
-            }
-        }
-
-        async function getWeather(city) {
-            try {
-                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`);
-                if (!response.ok) {
-                    throw new Error('City not found');
-                }
-                const data = await response.json();
-                displayWeather(data);
-                document.getElementById('error-message').textContent = '';
-                document.getElementById('toggle-unit-btn').classList.add('show'); // Show the switch button
-            } catch (error) {
-                console.error('Error fetching weather data:', error.message);
-                document.getElementById('weather-info').innerHTML = '';
-                document.getElementById('error-message').textContent = error.message;
-                document.getElementById('toggle-unit-btn').classList.remove('show'); // Hide the switch button on error
-            }
-        }
-
-        async function getForecast(city) {
-            try {
-                const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`);
-                if (!response.ok) {
-                    throw new Error('Unable to fetch forecast data');
-                }
-                const data = await response.json();
-                displayForecast(data);
-            } catch (error) {
-                console.error('Error fetching forecast data:', error.message);
-                document.getElementById('forecast').innerHTML = '';
-            }
-        }
-
-        async function getForecastByCoordinates(latitude, longitude) {
-            try {
-                const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=metric`);
-                if (!response.ok) {
-                    throw new Error('Unable to fetch forecast data');
-                }
-                const data = await response.json();
-                displayForecast(data);
-            } catch (error) {
-                console.error('Error fetching forecast data:', error.message);
-                document.getElementById('forecast').innerHTML = '';
-            }
-        }
-
-        function displayWeather(data) {
-            const weatherInfo = document.getElementById('weather-info');
-            const iconCode = data.weather[0].icon;
-            const iconUrl = `http://openweathermap.org/img/wn/${iconCode}.png`;
-            const temperature = isCelsius ? data.main.temp : celsiusToFahrenheit(data.main.temp);
-            const feelsLike = isCelsius ? data.main.feels_like : celsiusToFahrenheit(data.main.feels_like);
-
-            weatherInfo.innerHTML = `
-                <h2>${data.name}</h2>
-                <img src="${iconUrl}" alt="${data.weather[0].description}">
-                <p>${data.weather[0].description}</p>
-                <p>Temperature: ${temperature} ${isCelsius ? '°C' : '°F'}</p>
-                <p>Feels like: ${feelsLike} ${isCelsius ? '°C' : '°F'}</p>
-                <p>Humidity: ${data.main.humidity}%</p>
-                <p>Wind Speed: ${data.wind.speed} m/s</p>
-            `;
-            document.getElementById('toggle-unit-btn').textContent = isCelsius ? 'Switch to Fahrenheit' : 'Switch to Celsius';
-        }
-
-        function displayForecast(data) {
-            const forecastDiv = document.getElementById('forecast');
-            forecastDiv.innerHTML = '<h2>Forecast</h2>';
-
-            // Extracting forecast data for next 5 days
-            const forecastData = data.list.filter((item, index) => index % 8 === 0).slice(1, 6);
-
-            forecastData.forEach(day => {
-                const date = new Date(day.dt * 1000);
-                const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-                const iconCode = day.weather[0].icon;
-                const iconUrl = `http://openweathermap.org/img/wn/${iconCode}.png`;
-
-                const forecastDayHTML = `
-                    <div class="forecast-day">
-                        <div>${dayOfWeek}</div>
-                        <div>
-                            <img src="${iconUrl}" alt="${day.weather[0].description}">
-                            ${day.main.temp} °C
-                        </div>
-                    </div>
-                `;
-                forecastDiv.innerHTML += forecastDayHTML;
-            });
-        }
-
-        function celsiusToFahrenheit(celsius) {
-            return (celsius * 9 / 5) + 32;
-        }
-
-        const storedColor = localStorage.getItem('backgroundColor');
-
-    if (storedColor) {
-        if (storedColor.startsWith('linear-gradient')) {
-            document.body.style.background = storedColor;
-        } else {
-            document.body.style.backgroundColor = storedColor;
-        }
-    }
-    
-    // Function to save search history to local storage
-    function saveToHistory(city) {
-            const searchDate = new Date().toLocaleString(); // Get the current date and time
-            let history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-            history.unshift({ city, date: searchDate }); // Add the new search with city and date to the beginning of the history
-            localStorage.setItem('searchHistory', JSON.stringify(history));
-        }
-
-        // Function to display search history
-        function displayHistory() {
-            const historyList = document.getElementById('history-list');
-            historyList.innerHTML = ''; // Clear the previous list
-
-            const history = JSON.parse(localStorage.getItem('searchHistory')) || [];
-            history.forEach(item => {
-                const li = document.createElement('li');
-                li.textContent = `${item.city} - ${item.date}`; // Display city and date
-                historyList.appendChild(li);
-            });
-        }
-
-        // Function to handle search button click
-        document.getElementById('search-btn').addEventListener('click', () => {
-            const city = document.getElementById('city-input').value.trim();
-            if (city) {
-                getWeather(city);
-                getForecast(city);
-                saveToHistory(city); // Save the search with city and date to history
-                displayHistory(); // Update the displayed history
-            } else {
-                // Display error message or handle empty input
-            }
-        });
-
-        // Call displayHistory() on page load
-        window.addEventListener('load', displayHistory);
-
-        // Function to add a city to favorites
-        function addToFavorites(city) {
-            let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-            if (!favorites.includes(city)) {
-                favorites.push(city);
-                localStorage.setItem('favorites', JSON.stringify(favorites));
-                displayFavorites();
-            }
-        }
-
-        // Function to display favorite locations
-        function displayFavorites() {
-            const favoritesList = document.getElementById('favorites-list');
-            favoritesList.innerHTML = ''; // Clear the previous list
-
-            const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-            favorites.forEach(city => {
-                const li = document.createElement('li');
-                li.textContent = city;
-                favoritesList.appendChild(li);
-            });
-        }
-
-        // Modify the search button event listener
-        document.getElementById('search-btn').addEventListener('click', () => {
-            const city = document.getElementById('city-input').value.trim();
-            if (city) {
-                getWeather(city);
-                getForecast(city);
-                saveToHistory(city);
-                if (addToFavoritesCheckbox.checked) { // Check if the "Add to Favorites" checkbox is checked
-                    addToFavorites(city); // Add the city to favorites
-                }
-                displayHistory();
-            } else {
-                // Display error message or handle empty input
-            }
-        });
-
-        // Call displayFavorites() on page load
-        window.addEventListener('load', displayFavorites);
-
-    </script>
 </body>
 </html>
-
 
 
 
